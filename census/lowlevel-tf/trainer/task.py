@@ -41,6 +41,9 @@ def run(target,
         train_batch_size,
         eval_batch_size,
         learning_rate,
+        first_layer_size,
+        num_layers,
+        scale_factor,
         eval_every=100,
         eval_steps=10,
         num_epochs=None):
@@ -56,6 +59,9 @@ def run(target,
     train_batch_size (int): Batch size for training
     eval_batch_size (int): Batch size for evaluation
     learning_rate (float): Learning rate for Gradient Descent
+    first_layer_size (int): Size of the first DNN layer
+    num_layers (int): Number of hidden layers in the DNN
+    scale_factor (float): Decay rate for the size of hidden layers
     eval_every (int): Run evaluation frequency
     eval_steps (int): Eval steps
     num_epochs (int): Number of epochs
@@ -82,7 +88,12 @@ def run(target,
       ))
       labels = tf.cond(is_train, lambda: train_label, lambda: eval_label)
       train_op, accuracy_op, global_step_tensor, predictions = model.model_fn(
-          inputs, labels, learning_rate=learning_rate)
+          inputs, labels,
+          hidden_units=[
+              max(2, int(first_layer_size * scale_factor**i))
+              for i in range(num_layers)
+          ],
+          learning_rate=learning_rate)
 
     with tf.train.MonitoredTrainingSession(master=target,
                                            is_chief=is_chief,
@@ -109,7 +120,6 @@ def run(target,
                 [global_step_tensor, train_op],
                 feed_dict={mode: TRAIN}
             )
-
 
 def dispatch(*args, **kwargs):
   """Parse TF_CONFIG to cluster_spec and call run()."""
@@ -173,6 +183,18 @@ if __name__ == "__main__":
                      type=float,
                      default=0.5,
                      help='Learning rate for SGD')
+  parse.add_argument('--first_layer_size',
+                     type=int,
+                     default=100,
+                     help='Number of nodes in the first layer of DNN')
+  parse.add_argument('--num_layers',
+                     type=int,
+                     default=4,
+                     help='Number of layers in DNN')
+  parse.add_argument('--scale_factor',
+                     type=float,
+                     default=0.7,
+                     help='Rate of decay size of layer for DNN')
   parse_args, unknown = parser.parse_known_args()
 
   dispatch(**parse_args.__dict__)

@@ -40,9 +40,9 @@ def run(target,
         output_dir,
         train_batch_size,
         eval_batch_size,
+        learning_rate,
         eval_every=100,
         eval_steps=10,
-        learning_rate=0.1,
         num_epochs=None):
   """Run the training and evaluation graph.
 
@@ -55,9 +55,9 @@ def run(target,
     output_dir (string): Output directory for model and checkpoint
     train_batch_size (int): Batch size for training
     eval_batch_size (int): Batch size for evaluation
+    learning_rate (float): Learning rate for Gradient Descent
     eval_every (int): Run evaluation frequency
     eval_steps (int): Eval steps
-    learning_rate (float): Learning rate for Gradient Descent
     num_epochs (int): Number of epochs
   """
   training_eval_graph = tf.Graph()
@@ -169,6 +169,10 @@ if __name__ == "__main__":
                       type=int,
                       default=40,
                       help='Batch size for evaluation steps')
+  parse.add_argument('--learning_rate',
+                     type=float,
+                     default=0.5,
+                     help='Learning rate for SGD')
   parse_args, unknown = parser.parse_known_args()
 
   dispatch(**parse_args.__dict__)

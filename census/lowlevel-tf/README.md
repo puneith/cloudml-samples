@@ -15,6 +15,9 @@ on Google Cloud Storage:
  * Training file is `adult.data.csv`
  * Evaluation file is `adult.test.csv`
 
+DISCLAIMER: The source of this dataset is from a third party. Google provides no representation,
+warranty, or other guarantees about the validity or any other aspects of this dataset.
+
 ```
 export CENSUS_DATA=census_data
 export TRAIN_FILE=adult.data.csv

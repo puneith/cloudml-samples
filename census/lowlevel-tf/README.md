@@ -185,3 +185,8 @@ gcloud beta ml jobs submit training $JOB_NAME \
                                     --eval_data_path $EVAL_GCS_FILE \
                                     --output_dir $GCS_OUTPUT_DIR
 ```
+
+# Hyperparameter Tuning
+Cloud ML Engine allows you to perform Hyperparameter tuning to find out the most
+optimal hyperparameters. See [Overview of Hyperparameter
+Tuning](https://cloud.google.com/ml/docs/concepts/hyperparameter-tuning-overview) for more details.

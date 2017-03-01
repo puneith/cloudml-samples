@@ -66,6 +66,7 @@ def run(target,
     eval_steps (int): Eval steps
     num_epochs (int): Number of epochs
   """
+
   training_eval_graph = tf.Graph()
   with training_eval_graph.as_default():
     with tf.device(tf.train.replica_device_setter()):

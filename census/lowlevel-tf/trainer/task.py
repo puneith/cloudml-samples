@@ -164,6 +164,7 @@ def run(target,
       for i in range(num_layers)
   ]
 
+  # If the server is chief which is `master`
   if is_chief:
     tf.logging.info("Created DNN hidden units {}".format(hidden_units))
     evaluation_graph = tf.Graph()
@@ -182,6 +183,7 @@ def run(target,
           hidden_units=hidden_units,
           learning_rate=learning_rate
       )
+
     hooks = [EvaluationRunHook(
         job_dir,
         metric_dict,
@@ -195,6 +197,8 @@ def run(target,
     # which automatically places the parameters on the `ps` server
     # and the `ops` on the workers
     with tf.device(tf.train.replica_device_setter()):
+
+      # Features and label tensors as read using filename queue
       features, labels = model.input_fn(
           train_data_paths,
           num_epochs=num_epochs,
@@ -234,17 +238,33 @@ def run(target,
       step = global_step_tensor.eval(session=session)
 
       # Run the training graph which returns the step number as tracked by
-      # the global step tensorr
+      # the global step tensor
       with coord.stop_on_exception():
         while (max_steps is None or step < max_steps) and not coord.should_stop():
           step, _ = session.run([global_step_tensor, train_op])
 
+    # Find the filename of the latest saved checkpoint file
     latest_checkpoint = tf.train.latest_checkpoint(job_dir)
+
     for mode in ['CSV', 'TF_RECORD', 'JSON']:
-      build_and_run_exports(latest_checkpoint, job_dir, mode, hidden_units, learning_rate)
+      build_and_run_exports(latest_checkpoint,
+                            job_dir,
+                            mode,
+                            hidden_units,
+                            learning_rate)
 
 
 def build_and_run_exports(latest, job_dir, mode, hidden_units, learning_rate):
+  """Given the latest checkpoint file export the saved model.
+
+  Args:
+    latest (string): Latest checkpoint file
+    job_dir (string): Location of checkpoints and model files
+    mode (string): Train, Eval or Predict
+    hidden_units (list): Number of hidden units
+    learning_rate (float): Learning rate for the SGD
+  """
+
   prediction_graph = tf.Graph()
   exporter = tf.saved_model.builder.SavedModelBuilder(
       os.path.join(job_dir, 'exports', mode))

@@ -204,7 +204,7 @@ export HPTUNING_CONFIG=hptuning_config.yaml
 gcloud beta ml jobs submit training $JOB_NAME \
                                     --scale-tier $SCALE_TIER \
                                     --runtime-version 1.0 \
-                                    --config $HPTUNING_CONFIG
+                                    --config $HPTUNING_CONFIG \
                                     --job-dir $GCS_JOB_DIR \
                                     --module-name trainer.task \
                                     --package-path trainer/ \

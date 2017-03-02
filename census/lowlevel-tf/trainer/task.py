@@ -63,7 +63,8 @@ class EvalRepeatedlyHook(tf.train.SessionRunHook):
 
     self._eval_lock = threading.Lock()
     self._checkpoint_lock = threading.Lock()
-    self._file_writer = tf.summary.FileWriter(checkpoint_dir, graph=graph)
+    self._file_writer = tf.summary.FileWriter(
+        os.path.join(checkpoint_dir, 'eval'), graph=graph)
 
   def after_run(self, run_context, run_values):
     # Always check for new checkpoints in case a single evaluation
@@ -86,8 +87,8 @@ class EvalRepeatedlyHook(tf.train.SessionRunHook):
 
   def end(self, session):
     # Block to ensure we always eval at the end
+    self._update_latest_checkpoint()
     self._eval_lock.acquire()
-    latest = tf.train.latest_checkpoint(self._checkpoint_dir)
     self._run_eval()
     self._eval_lock.release()
 
@@ -227,7 +228,8 @@ def run(target,
 
 def build_and_run_exports(latest, job_dir, mode, hidden_units, learning_rate):
   prediction_graph = tf.Graph()
-  exporter = tf.saved_model.builder.SavedModelBuilder(os.path.join(job_dir, mode))
+  exporter = tf.saved_model.builder.SavedModelBuilder(
+      os.path.join(job_dir, 'exports', mode))
   with prediction_graph.as_default():
     features, placeholder_dict = model.build_serving_inputs(mode)
     prediction_dict = model.model_fn(
@@ -262,7 +264,8 @@ def build_and_run_exports(latest, job_dir, mode, hidden_units, learning_rate):
         tags=[tf.saved_model.tag_constants.SERVING],
         signature_def_map={
             tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY: signature_def
-        }
+        },
+        main_op=tf.tables_initializer()
     )
 
   exporter.save()
@@ -328,7 +331,7 @@ if __name__ == "__main__":
                       help='Batch size for evaluation steps')
   parser.add_argument('--learning-rate',
                       type=float,
-                      default=0.5,
+                      default=0.1,
                       help='Learning rate for SGD')
   parser.add_argument('--first-layer-size',
                      type=int,

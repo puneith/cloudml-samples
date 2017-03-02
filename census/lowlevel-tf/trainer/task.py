@@ -169,13 +169,15 @@ def run(target,
     tf.logging.info("Created DNN hidden units {}".format(hidden_units))
     evaluation_graph = tf.Graph()
     with evaluation_graph.as_default():
+
+      # Features and label tensors
       features, labels = model.input_fn(
           eval_data_paths,
           num_epochs=eval_num_epochs,
           batch_size=eval_batch_size,
           shuffle=False
       )
-
+      # Accuracy and AUROC metrics
       metric_dict = model.model_fn(
           model.EVAL,
           features,
@@ -260,7 +262,7 @@ def build_and_run_exports(latest, job_dir, mode, hidden_units, learning_rate):
   Args:
     latest (string): Latest checkpoint file
     job_dir (string): Location of checkpoints and model files
-    mode (string): Train, Eval or Predict
+    mode (string): Model export format
     hidden_units (list): Number of hidden units
     learning_rate (float): Learning rate for the SGD
   """

@@ -31,7 +31,7 @@ tf.logging.set_verbosity(tf.logging.INFO)
 
 
 class EvalRepeatedlyHook(tf.train.SessionRunHook):
-
+  """EvalRepeatedlyHook performs continuous evaluation of the model."""
   def __init__(self,
                checkpoint_dir,
                metric_dict,

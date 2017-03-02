@@ -220,14 +220,14 @@ def run(target,
         while (max_steps is None or step < max_steps) and not coord.should_stop():
           step, _ = session.run([global_step_tensor, train_op])
 
-    latest_checkpoint = tf.train.latest_checkpoint(output_dir)
+    latest_checkpoint = tf.train.latest_checkpoint(job_dir)
     for mode in ['CSV', 'TF_RECORD', 'JSON']:
-      build_and_run_exports(latest_checkpoint, output_dir, mode, hidden_units, learning_rate)
+      build_and_run_exports(latest_checkpoint, job_dir, mode, hidden_units, learning_rate)
 
 
-def build_and_run_exports(latest, output_dir, mode, hidden_units, learning_rate):
+def build_and_run_exports(latest, job_dir, mode, hidden_units, learning_rate):
   prediction_graph = tf.Graph()
-  exporter = tf.saved_model.builder.SavedModelBuilder(os.path.join(output_dir, mode))
+  exporter = tf.saved_model.builder.SavedModelBuilder(os.path.join(job_dir, mode))
   with prediction_graph.as_default():
     features, placeholder_dict = model.build_serving_inputs(mode)
     prediction_dict = model.model_fn(

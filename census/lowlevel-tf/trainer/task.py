@@ -30,8 +30,8 @@ import model
 tf.logging.set_verbosity(tf.logging.INFO)
 
 
-class EvalRepeatedlyHook(tf.train.SessionRunHook):
-  """EvalRepeatedlyHook performs continuous evaluation of the model."""
+class EvaluationRunHook(tf.train.SessionRunHook):
+  """EvaluationRunHook performs continuous evaluation of the model."""
   def __init__(self,
                checkpoint_dir,
                metric_dict,
@@ -86,7 +86,7 @@ class EvalRepeatedlyHook(tf.train.SessionRunHook):
       self._checkpoint_lock.release()
 
   def end(self, session):
-    # Block to ensure we always eval at the end
+    """Called at then end of session to make sure we always evaluate."""
     self._update_latest_checkpoint()
     self._eval_lock.acquire()
     self._run_eval()
@@ -118,6 +118,7 @@ class EvalRepeatedlyHook(tf.train.SessionRunHook):
 
       self._file_writer.add_summary(summaries, global_step=train_step)
       tf.logging.info(final_values)
+
 
 def run(target,
         is_chief,
@@ -181,16 +182,18 @@ def run(target,
           hidden_units=hidden_units,
           learning_rate=learning_rate
       )
-    hooks = [EvalRepeatedlyHook(
+    hooks = [EvaluationRunHook(
         job_dir,
         metric_dict,
         evaluation_graph,
         eval_steps=eval_steps,
     )]
-  else:
-    hooks = []
 
+  # Create a new graph and specify that as default
   with tf.Graph().as_default():
+    # Placement of ops on devices using replica device setter
+    # which automatically places the parameters on the `ps` server
+    # and the `ops` on the workers
     with tf.device(tf.train.replica_device_setter()):
       features, labels = model.input_fn(
           train_data_paths,
@@ -198,6 +201,7 @@ def run(target,
           batch_size=train_batch_size
       )
 
+      # Returns the training graph and global step tensor
       train_op, global_step_tensor = model.model_fn(
           model.TRAIN,
           features,
@@ -207,16 +211,30 @@ def run(target,
       )
 
 
+    # Creates a MonitoredSession for training
+    # https://www.tensorflow.org/api_docs/python/tf/train/MonitoredTrainingSession
     with tf.train.MonitoredTrainingSession(master=target,
                                            is_chief=is_chief,
                                            checkpoint_dir=job_dir,
                                            hooks=hooks,
                                            save_checkpoint_secs=2,
                                            save_summaries_steps=50) as session:
+
+      # Tuple of exceptions that should cause a clean stop of the coordinator
+      # https://www.tensorflow.org/api_docs/python/train/coordinator_and_queuerunner#Coordinator
       coord = tf.train.Coordinator(clean_stop_exception_types=(
           tf.errors.CancelledError,))
+
+      # Important to start all queue runners so that data is available
+      # for reading
       tf.train.start_queue_runners(coord=coord, sess=session)
+
+      # Global step to keep track of global number of steps particularly in
+      # distributed setting
       step = global_step_tensor.eval(session=session)
+
+      # Run the training graph which returns the step number as tracked by
+      # the global step tensorr
       with coord.stop_on_exception():
         while (max_steps is None or step < max_steps) and not coord.should_stop():
           step, _ = session.run([global_step_tensor, train_op])

@@ -128,10 +128,13 @@ def model_fn(mode,
     # Build a Hash Table inside the graph
     table = tf.contrib.lookup.string_to_index_table_from_tensor(
         label_values)
+
     # Use the hash table to convert string labels to ints
     label_indices = table.lookup(labels)
+
     # Make labels a vector
     label_indices_vector = tf.squeeze(label_indices)
+
     # global_step is necessary in eval to correctly load the step
     # of the checkpoint we are evaluating
     global_step = tf.contrib.framework.get_or_create_global_step()
@@ -153,6 +156,9 @@ def model_fn(mode,
     return train_op, global_step
 
   if mode == EVAL:
+    # Return accuracy and area under ROC curve metrics
+    # See https://en.wikipedia.org/wiki/Receiver_operating_characteristic
+    # See https://www.kaggle.com/wiki/AreaUnderCurve
     return {
         'accuracy': tf.contrib.metrics.streaming_accuracy(
             predicted_indices, label_indices),
@@ -205,12 +211,16 @@ def parse_csv(rows_string_tensor):
     features.pop(col)
   return features
 
+
 def input_fn(filenames,
              num_epochs=None,
              shuffle=True,
              skip_header_lines=0,
              batch_size=40):
   """Generates an input function for training or evaluation.
+  This uses the input pipeline based approach using file name queue
+  to read data so that entire data is not loaded in memory.
+
   Args:
       filenames: [str] list of CSV files to read data from.
       num_epochs: int how many times through to read the data.

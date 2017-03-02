@@ -290,11 +290,15 @@ def build_and_run_exports(latest, job_dir, mode, hidden_units, learning_rate):
 
 
 def dispatch(*args, **kwargs):
-  """Parse TF_CONFIG to cluster_spec and call run()."""
+  """Parse TF_CONFIG to cluster_spec and call run() method
+  TF_CONFIG environment variable is available when running using
+  gcloud either locally or on cloud. It has all the information required
+  to create a ClusterSpec which is important for running distributed code.
+  """
 
   tf_config = os.environ.get('TF_CONFIG')
 
-  # If TF_CONFIG not available run local
+  # If TF_CONFIG is not available run local
   if not tf_config:
     return run('', True, *args, **kwargs)
 
@@ -313,6 +317,9 @@ def dispatch(*args, **kwargs):
                            job_name=job_name,
                            task_index=task_index)
 
+  # Wait for incoming connections forever
+  # Worker ships the graph to the ps server
+  # The ps server manages the parameters
   if job_name == 'ps':
     server.join()
     return

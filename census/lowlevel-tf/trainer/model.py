@@ -66,9 +66,11 @@ def model_fn(mode,
   """Create a Feed forward network classification network
 
   Args:
-    input_x (tf.placeholder): Feature placeholder input
+    mode (string): Mode running training, evaluation or prediction
+    features (dict): Dictionary of input feature Tensors
+    labels (Tensor): Class label Tensor
     hidden_units (list): Hidden units
-    num_classes (int): Number of classes
+    learning_rate (float): Learning rate for the SGD
 
   Returns:
     Tuple (train_op, accuracy_op, global_step, predictions): Tuple containing
@@ -201,7 +203,10 @@ def build_serving_inputs(mode, default_batch_size=None):
 
 
 def parse_csv(rows_string_tensor):
-  # model_fn expects rank 2 tensors.
+  """Takes the string input tensor and returns a dict of rank-2 tensors."""
+
+  # Takes a rank-1 tensor and converts it into rank-2 tensor
+  # Example if the data is [1,2,3,4] then converts it into [[1],[2],[3],[4]]
   row_columns = tf.expand_dims(rows_string_tensor, -1)
   columns = tf.decode_csv(row_columns, record_defaults=CSV_COLUMN_DEFAULTS)
   features = dict(zip(CSV_COLUMNS, columns))
